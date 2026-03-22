@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FlagVault CTF — Needle in a Haystack</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    /* ── Page extras ── */
+    .layout-2col {
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 2.5rem;
+      align-items: start;
+    }
+    @media (max-width: 960px) { .layout-2col { grid-template-columns: 1fr; } }
+
+    /* Terminal blocks */
+    .terminal-block {
+      background: #010810;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      margin-bottom: 1.2rem;
+    }
+    .terminal-titlebar {
+      background: var(--surface2);
+      padding: 0.45rem 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .t-dot { width: 10px; height: 10px; border-radius: 50%; }
+    .t-title {
+      margin-left: auto;
+      font-family: var(--font-mono);
+      font-size: 0.6rem;
+      color: var(--text-dim);
+      letter-spacing: 1.5px;
+    }
+    .terminal-body {
+      padding: 1rem 1.3rem;
+      font-family: var(--font-mono);
+      font-size: 0.81rem;
+      line-height: 1.95;
+      color: var(--text);
+      overflow-x: auto;
+    }
+    .t-prompt { color: var(--accent2); user-select: none; }
+    .t-cmd    { color: var(--accent3); }
+    .t-out    { color: var(--text-dim); }
+    .t-flag   { color: var(--accent); font-weight: bold; }
+    .t-cmt    { color: #2a4a3a; font-style: italic; }
+
+    /* File stats strip */
+    .file-stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      margin-bottom: 1.8rem;
+      background: var(--border);
+      gap: 1px;
+    }
+    @media (max-width:600px) { .file-stats { grid-template-columns: 1fr 1fr; } }
+    .fstat {
+      background: var(--surface2);
+      padding: 1.1rem 1rem;
+      text-align: center;
+    }
+    .fstat-val {
+      font-family: var(--font-hud);
+      font-size: 1.55rem;
+      font-weight: 900;
+      color: var(--accent);
+      display: block;
+      line-height: 1;
+      text-shadow: 0 0 14px var(--glow-c);
+    }
+    .fstat-val.amber { color: var(--accent3); text-shadow: 0 0 14px rgba(245,166,35,0.4); }
+    .fstat-val.red   { color: var(--accent2); text-shadow: 0 0 14px var(--glow-r); }
+    .fstat-label {
+      font-family: var(--font-mono);
+      font-size: 0.58rem;
+      letter-spacing: 2px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      margin-top: 0.3rem;
+    }
+
+    /* Download button */
+    .dl-btn {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.1rem 1.4rem;
+      text-decoration: none;
+      color: var(--text-hi);
+      transition: all var(--transition);
+      margin-bottom: 2rem;
+    }
+    .dl-btn:hover { border-color: var(--accent); background: rgba(0,232,200,0.05); transform: translateX(4px); }
+    .dl-icon { font-size: 2rem; flex-shrink: 0; }
+    .dl-name { font-family: var(--font-hud); font-size: 0.88rem; color: var(--accent); display: block; margin-bottom: 0.2rem; }
+    .dl-meta { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); }
+    .dl-arrow { font-size: 1.2rem; color: var(--text-dim); margin-left: auto; transition: all var(--transition); }
+    .dl-btn:hover .dl-arrow { transform: translateX(5px); color: var(--accent); }
+
+    /* Steps */
+    .steps { display: flex; flex-direction: column; gap: 0.7rem; margin-bottom: 2rem; }
+    .step {
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 0.85rem 1.1rem;
+      transition: border-color var(--transition);
+    }
+    .step:hover { border-color: var(--border2); }
+    .step-num {
+      width: 24px; height: 24px;
+      border-radius: 50%;
+      border: 1px solid rgba(0,232,200,0.4);
+      font-family: var(--font-hud);
+      font-size: 0.65rem;
+      color: var(--accent);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .step-text { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text); line-height: 1.65; }
+    .step-text strong { color: var(--accent3); }
+
+    /* Hints */
+    .hint-item { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 0.6rem; }
+    .hint-toggle {
+      width: 100%; text-align: left; background: var(--surface2); border: none; cursor: pointer;
+      padding: 0.65rem 1rem; display: flex; align-items: center; gap: 0.6rem;
+      font-family: var(--font-mono); font-size: 0.73rem; color: var(--text-dim);
+      transition: background var(--transition), color var(--transition);
+    }
+    .hint-toggle:hover { background: rgba(245,166,35,0.07); color: var(--accent3); }
+    .hint-num {
+      background: rgba(245,166,35,0.12); color: var(--accent3);
+      border: 1px solid rgba(245,166,35,0.3); padding: 1px 7px;
+      font-size: 0.6rem; letter-spacing: 1px; border-radius: 2px;
+    }
+    .hint-cost { margin-left: auto; color: var(--accent2); font-size: 0.64rem; }
+    .hint-body {
+      display: none; padding: 0.85rem 1rem;
+      font-family: var(--font-mono); font-size: 0.78rem; color: var(--accent3);
+      background: rgba(245,166,35,0.04); border-top: 1px solid rgba(245,166,35,0.15); line-height: 1.7;
+    }
+    .hint-item.open .hint-toggle { color: var(--accent3); background: rgba(245,166,35,0.06); }
+    .hint-item.open .hint-body { display: block; }
+
+    /* Sidebar */
+    .side-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 1.3rem 1.4rem; margin-bottom: 1.2rem;
+    }
+    .side-title {
+      font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 3px;
+      color: var(--text-dim); text-transform: uppercase; margin-bottom: 1rem;
+      padding-bottom: 0.6rem; border-bottom: 1px solid var(--border);
+    }
+    .side-title::before { content: '// '; color: var(--accent); }
+    .meta-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 0.42rem 0; border-bottom: 1px solid rgba(22,64,96,0.4);
+      font-family: var(--font-mono); font-size: 0.74rem;
+    }
+    .meta-row:last-child { border-bottom: none; }
+    .mk { color: var(--text-dim); } .mv { color: var(--text-hi); }
+    .mv.g { color: var(--accent); } .mv.a { color: var(--accent3); }
+
+    /* Progress */
+    .prog-wrap { margin-top: 0.8rem; }
+    .prog-label { font-family: var(--font-mono); font-size: 0.62rem; color: var(--text-dim); display: flex; justify-content: space-between; margin-bottom: 0.3rem; }
+    .prog-bar { height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+    .prog-fill { height: 100%; background: var(--accent); border-radius: 2px; width: 0; transition: width 1.4s cubic-bezier(.22,1,.36,1); }
+
+    /* Grep table */
+    .grep-table { width: 100%; border-collapse: collapse; font-family: var(--font-mono); font-size: 0.72rem; }
+    .grep-table th { text-align: left; color: var(--text-dim); font-size: 0.58rem; letter-spacing: 2px; text-transform: uppercase; padding: 0.35rem 0.5rem; border-bottom: 1px solid var(--border); }
+    .grep-table td { padding: 0.45rem 0.5rem; border-bottom: 1px solid rgba(22,64,96,0.35); vertical-align: top; }
+    .grep-table tr:last-child td { border-bottom: none; }
+    .grep-table tr:hover td { background: rgba(0,232,200,0.03); }
+    .gc { color: var(--accent); white-space: nowrap; }
+    .gd { color: var(--text-dim); }
+
+    /* Submit */
+    .submit-section {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 2rem; margin-top: 2.5rem; position: relative; overflow: hidden;
+    }
+    .submit-section::before {
+      content: 'SUBMIT'; position: absolute; right: 1.5rem; top: 1rem;
+      font-family: var(--font-hud); font-size: 4rem; font-weight: 900;
+      color: rgba(0,232,200,0.03); pointer-events: none; line-height: 1;
+    }
+    .submit-title { font-family: var(--font-hud); font-size: 1.05rem; color: var(--text-hi); margin-bottom: 0.3rem; display: flex; align-items: center; gap: 0.6rem; }
+    .submit-title::before { content: '⚑'; color: var(--accent2); }
+    .submit-sub { font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-dim); margin-bottom: 1.5rem; }
+    .flag-row { display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: flex-end; }
+    .flag-wrap { flex: 1; min-width: 260px; position: relative; }
+    .flag-prefix {
+      position: absolute; left: 1rem; top: 50%; transform: translateY(-50%);
+      font-family: var(--font-mono); font-size: 0.78rem; color: var(--accent2); pointer-events: none; white-space: nowrap;
+    }
+    .flag-input { padding-left: 7.8rem !important; letter-spacing: 1px; }
+    @keyframes shake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-7px)} 40%{transform:translateX(7px)} 60%{transform:translateX(-4px)} 80%{transform:translateX(4px)} }
+    .shake { animation: shake 0.35s ease; }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <a href="#" class="nav-brand">
+    <span class="bracket">[</span><span class="brand-flag">⚑</span>FLAG<span style="color:var(--accent)">VAULT</span><span class="bracket">]</span>
+  </a>
+  <ul class="nav-links">
+    <li><a href="#">Home</a></li>
+    <li><a href="#" class="active">Challenges</a></li>
+    <li><a href="#">Scoreboard</a></li>
+    <li><a href="#">Rules</a></li>
+  </ul>
+  <div class="nav-status"><span class="status-dot"></span>CTF LIVE</div>
+</nav>
+
+<!-- PAGE -->
+<div class="page-wrap">
+
+  <!-- Breadcrumb -->
+  <div style="font-family:var(--font-mono);font-size:.68rem;color:var(--text-dim);margin-bottom:2rem;display:flex;align-items:center;gap:.5rem;">
+    <a href="#" style="color:var(--text-dim)">challenges</a><span>/</span>
+    <a href="#" style="color:var(--text-dim)">linux</a><span>/</span>
+    <span style="color:var(--accent)">needle-in-a-haystack</span>
+  </div>
+
+  <!-- Header -->
+  <div class="page-header" data-index="LNX">
+    <div class="page-eyebrow">🐚 Linux / Bash · Challenge #03</div>
+    <h1 class="page-title">Needle in a <span class="hl2">Haystack</span></h1>
+    <p class="page-desc">A 10,000-line file hides a single flag. One line is marked FLAGLINE. Use bash to find it — fast.</p>
+  </div>
+
+  <div class="layout-2col">
+
+    <!-- LEFT -->
+    <div>
+
+      <!-- Stats -->
+      <div class="sec-divider"><h3>File Overview</h3></div>
+      <div class="file-stats">
+        <div class="fstat"><span class="fstat-val">10,000</span><div class="fstat-label">Total Lines</div></div>
+        <div class="fstat"><span class="fstat-val amber">1</span><div class="fstat-label">Flag Line</div></div>
+        <div class="fstat"><span class="fstat-val">~400 KB</span><div class="fstat-label">File Size</div></div>
+        <div class="fstat"><span class="fstat-val red">9,999</span><div class="fstat-label">Noise Lines</div></div>
+      </div>
+
+      <!-- Download -->
+      <a class="dl-btn" href="files/data.txt" download="data.txt">
+        <span class="dl-icon">📄</span>
+        <div>
+          <span class="dl-name">data.txt</span>
+          <span class="dl-meta">10,000 lines · ~400 KB · Plain text · flag hidden inside</span>
+        </div>
+        <span class="dl-arrow">→</span>
+      </a>
+
+      <!-- Scenario -->
+      <div class="sec-divider"><h3>Scenario</h3></div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--accent4);border-radius:var(--radius);padding:1.2rem 1.4rem;margin-bottom:2rem;font-family:var(--font-mono);font-size:.82rem;color:var(--text);line-height:1.85;">
+        An intelligence dump was recovered from a compromised server. The file contains thousands of log entries, garbage data, and decoys. Somewhere in those 10,000 lines an operative embedded the flag on a line marked with the keyword <code>FLAGLINE</code>.<br><br>
+        You <em>could</em> scroll through 10,000 lines manually. Or you could use the right tool — the one every Linux admin reaches for first.
+      </div>
+
+      <!-- Steps -->
+      <div class="sec-divider"><h3>How To Solve</h3></div>
+      <div class="steps">
+        <div class="step">
+          <span class="step-num">1</span>
+          <div class="step-text"><strong>Download</strong> the file using the button above or via terminal:<br><code>wget https://your-repo.github.io/files/data.txt</code></div>
+        </div>
+        <div class="step">
+          <span class="step-num">2</span>
+          <div class="step-text"><strong>Run grep</strong> to search for the keyword <code>FLAGLINE</code> — it instantly returns the one matching line from 10,000.</div>
+        </div>
+        <div class="step">
+          <span class="step-num">3</span>
+          <div class="step-text"><strong>Read the flag</strong> — the format is <code>FLAGLINE :: FlagVault{...}</code>. Copy the full flag value and submit below.</div>
+        </div>
+      </div>
+
+      <!-- Commands -->
+      <div class="sec-divider"><h3>Command Examples</h3></div>
+
+      <div class="terminal-block">
+        <div class="terminal-titlebar">
+          <span class="t-dot" style="background:#ff5f56"></span>
+          <span class="t-dot" style="background:#ffbd2e"></span>
+          <span class="t-dot" style="background:#27c93f"></span>
+          <span class="t-title">bash — basic grep</span>
+        </div>
+        <div class="terminal-body">
+          <div><span class="t-prompt">$ </span><span class="t-cmd">grep "FLAGLINE" data.txt</span></div>
+          <div><span class="t-out">FLAGLINE :: </span><span class="t-flag">FlagVault{gr3p_1s_y0ur_fr13nd}</span></div>
+        </div>
+      </div>
+
+      <div class="terminal-block">
+        <div class="terminal-titlebar">
+          <span class="t-dot" style="background:#ff5f56"></span>
+          <span class="t-dot" style="background:#ffbd2e"></span>
+          <span class="t-dot" style="background:#27c93f"></span>
+          <span class="t-title">bash — show line number too</span>
+        </div>
+        <div class="terminal-body">
+          <div><span class="t-prompt">$ </span><span class="t-cmd">grep -n "FLAGLINE" data.txt</span></div>
+          <div><span class="t-out">5853:FLAGLINE :: </span><span class="t-flag">FlagVault{gr3p_1s_y0ur_fr13nd}</span></div>
+        </div>
+      </div>
+
+      <div class="terminal-block">
+        <div class="terminal-titlebar">
+          <span class="t-dot" style="background:#ff5f56"></span>
+          <span class="t-dot" style="background:#ffbd2e"></span>
+          <span class="t-dot" style="background:#27c93f"></span>
+          <span class="t-title">bash — extract flag value only (pipe + cut)</span>
+        </div>
+        <div class="terminal-body">
+          <div><span class="t-cmt"># Pipe into cut to isolate just the flag</span></div>
+          <div><span class="t-prompt">$ </span><span class="t-cmd">grep "FLAGLINE" data.txt | cut -d' ' -f3</span></div>
+          <div><span class="t-flag">FlagVault{gr3p_1s_y0ur_fr13nd}</span></div>
+        </div>
+      </div>
+
+      <div class="terminal-block">
+        <div class="terminal-titlebar">
+          <span class="t-dot" style="background:#ff5f56"></span>
+          <span class="t-dot" style="background:#ffbd2e"></span>
+          <span class="t-dot" style="background:#27c93f"></span>
+          <span class="t-title">bash — awk alternative</span>
+        </div>
+        <div class="terminal-body">
+          <div><span class="t-cmt"># awk scans for pattern, prints full line</span></div>
+          <div><span class="t-prompt">$ </span><span class="t-cmd">awk '/FLAGLINE/' data.txt</span></div>
+          <div><span class="t-out">FLAGLINE :: </span><span class="t-flag">FlagVault{gr3p_1s_y0ur_fr13nd}</span></div>
+        </div>
+      </div>
+
+      <div class="terminal-block">
+        <div class="terminal-titlebar">
+          <span class="t-dot" style="background:#ff5f56"></span>
+          <span class="t-dot" style="background:#ffbd2e"></span>
+          <span class="t-dot" style="background:#27c93f"></span>
+          <span class="t-title">PowerShell — for Windows users</span>
+        </div>
+        <div class="terminal-body">
+          <div><span class="t-cmt"># On Windows — PowerShell equivalent</span></div>
+          <div><span class="t-prompt">PS&gt; </span><span class="t-cmd">Select-String -Pattern "FLAGLINE" -Path data.txt</span></div>
+          <div><span class="t-out">data.txt:5853:FLAGLINE :: </span><span class="t-flag">FlagVault{gr3p_1s_y0ur_fr13nd}</span></div>
+        </div>
+      </div>
+
+      <div class="terminal-block">
+        <div class="terminal-titlebar">
+          <span class="t-dot" style="background:#ff5f56"></span>
+          <span class="t-dot" style="background:#ffbd2e"></span>
+          <span class="t-dot" style="background:#27c93f"></span>
+          <span class="t-title">python — cross-platform one-liner</span>
+        </div>
+        <div class="terminal-body">
+          <div><span class="t-prompt">$ </span><span class="t-cmd">python3 -c "print([l.strip() for l in open('data.txt') if 'FLAGLINE' in l][0])"</span></div>
+          <div><span class="t-out">FLAGLINE :: </span><span class="t-flag">FlagVault{gr3p_1s_y0ur_fr13nd}</span></div>
+        </div>
+      </div>
+
+      <!-- Hints -->
+      <div class="sec-divider"><h3>Hints</h3></div>
+
+      <div class="hint-item" id="h1">
+        <button class="hint-toggle" onclick="toggleHint('h1')">
+          <span class="hint-num">HINT 01</span>
+          What command do I use to search inside a text file?
+          <span class="hint-cost">Free</span>
+        </button>
+        <div class="hint-body">
+          Use <code>grep</code> — Global Regular Expression Print. It reads every line and prints lines that match your pattern.<br><br>
+          Syntax: <code>grep "PATTERN" filename</code>
+        </div>
+      </div>
+
+      <div class="hint-item" id="h2">
+        <button class="hint-toggle" onclick="toggleHint('h2')">
+          <span class="hint-num">HINT 02</span>
+          Give me the exact command
+          <span class="hint-cost">− 25 pts</span>
+        </button>
+        <div class="hint-body">
+          <code>grep "FLAGLINE" data.txt</code><br><br>
+          This searches all 10,000 lines for the word FLAGLINE and immediately returns the single line containing it — plus the flag.
+        </div>
+      </div>
+
+      <div class="hint-item" id="h3">
+        <button class="hint-toggle" onclick="toggleHint('h3')">
+          <span class="hint-num">HINT 03</span>
+          I'm on Windows — no grep available
+          <span class="hint-cost">Free</span>
+        </button>
+        <div class="hint-body">
+          Options for Windows users:<br><br>
+          1. <strong>Git Bash</strong> — ships with grep, free from git-scm.com<br>
+          2. <strong>WSL</strong> — Windows Subsystem for Linux<br>
+          3. <strong>PowerShell:</strong> <code>Select-String -Pattern "FLAGLINE" data.txt</code><br>
+          4. <strong>Python:</strong> <code>python3 -c "print([l for l in open('data.txt') if 'FLAGLINE' in l][0].strip())"</code>
+        </div>
+      </div>
+
+      <!-- Submit -->
+      <div class="submit-section">
+        <div class="submit-title">Submit Your Flag</div>
+        <p class="submit-sub">Run grep on data.txt, find the FLAGLINE, and paste the full FlagVault{...} value below.</p>
+        <div class="flag-row">
+          <div class="flag-wrap">
+            <span class="flag-prefix">FlagVault{</span>
+            <input type="text" class="form-control flag-input" id="flagInput"
+              placeholder="gr3p_..." autocomplete="off" spellcheck="false"
+              onkeydown="if(event.key==='Enter')checkFlag()" />
+          </div>
+          <button class="btn btn-primary" onclick="checkFlag()">⚑ Submit</button>
+          <button class="btn btn-danger" onclick="clearInput()">✕ Clear</button>
+        </div>
+        <div class="submit-result" id="flagResult"></div>
+      </div>
+
+    </div><!-- /left -->
+
+    <!-- SIDEBAR -->
+    <aside>
+
+      <div class="side-card">
+        <div class="side-title">Challenge Info</div>
+        <div class="meta-row"><span class="mk">Category</span><span class="mv"><span class="tag tag-green">Linux / Bash</span></span></div>
+        <div class="meta-row"><span class="mk">Difficulty</span><span class="mv"><span class="tag tag-green">Easy</span></span></div>
+        <div class="meta-row"><span class="mk">Points</span><span class="mv a">150 pts</span></div>
+        <div class="meta-row"><span class="mk">Author</span><span class="mv g">FlagVault</span></div>
+        <div class="meta-row"><span class="mk">File</span><span class="mv">data.txt</span></div>
+        <div class="meta-row"><span class="mk">Lines</span><span class="mv">10,000</span></div>
+        <div class="meta-row"><span class="mk">Solves</span><span class="mv g" id="solveCount">312</span></div>
+        <div class="prog-wrap">
+          <div class="prog-label"><span>Solve rate</span><span id="solveRate">78%</span></div>
+          <div class="prog-bar"><div class="prog-fill" id="progFill"></div></div>
+        </div>
+      </div>
+
+      <div class="side-card">
+        <div class="side-title">Grep Cheatsheet</div>
+        <table class="grep-table">
+          <tr><th>Flag</th><th>Effect</th></tr>
+          <tr><td class="gc"><code>-n</code></td><td class="gd">Show line numbers</td></tr>
+          <tr><td class="gc"><code>-i</code></td><td class="gd">Case-insensitive</td></tr>
+          <tr><td class="gc"><code>-c</code></td><td class="gd">Count matches</td></tr>
+          <tr><td class="gc"><code>-v</code></td><td class="gd">Invert (non-matching)</td></tr>
+          <tr><td class="gc"><code>-E</code></td><td class="gd">Extended regex</td></tr>
+          <tr><td class="gc"><code>-o</code></td><td class="gd">Print match only</td></tr>
+          <tr><td class="gc"><code>-r</code></td><td class="gd">Recursive search</td></tr>
+          <tr><td class="gc"><code>-l</code></td><td class="gd">Filenames only</td></tr>
+          <tr><td class="gc"><code>-A N</code></td><td class="gd">N lines after match</td></tr>
+          <tr><td class="gc"><code>-B N</code></td><td class="gd">N lines before match</td></tr>
+        </table>
+      </div>
+
+      <div class="side-card">
+        <div class="side-title">Tools</div>
+        <div class="tools-grid" style="grid-template-columns:1fr 1fr;">
+          <div class="tool-card" style="--tool-color:var(--accent);">
+            <span class="tool-icon">🔍</span>
+            <div class="tool-name">grep</div>
+            <span class="tool-tag">search</span>
+            <p class="tool-desc">The classic — on every Linux system by default.</p>
+          </div>
+          <div class="tool-card" style="--tool-color:var(--accent3);">
+            <span class="tool-icon">✂️</span>
+            <div class="tool-name">awk</div>
+            <span class="tool-tag">process</span>
+            <p class="tool-desc">Pattern actions and field extraction.</p>
+          </div>
+          <div class="tool-card" style="--tool-color:var(--accent2);">
+            <span class="tool-icon">🔄</span>
+            <div class="tool-name">sed</div>
+            <span class="tool-tag">stream</span>
+            <p class="tool-desc">Find, replace, filter text streams.</p>
+          </div>
+          <div class="tool-card" style="--tool-color:var(--accent4);">
+            <span class="tool-icon">🐍</span>
+            <div class="tool-name">Python</div>
+            <span class="tool-tag">scripting</span>
+            <p class="tool-desc">Cross-platform — works everywhere.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="side-card" style="border-left:3px solid var(--accent2);">
+        <div class="side-title">Flag Format</div>
+        <div style="font-family:var(--font-mono);font-size:.82rem;color:var(--text-dim);line-height:1.9;">
+          ⚑ <strong style="color:var(--accent2);">FlagVault{</strong><span style="color:var(--text-dim);">your_flag</span><strong style="color:var(--accent2);">}</strong><br>
+          <span style="font-size:.7rem;color:var(--text-dim);">Submit the full string including curly braces.</span>
+        </div>
+      </div>
+
+    </aside>
+
+  </div><!-- /layout-2col -->
+</div><!-- /page-wrap -->
+
+<footer class="footer">
+  <div class="footer-brand">FLAG<span>VAULT</span> CTF</div>
+  <div class="footer-copy">© 2024 FlagVault · Linux / Bash · Needle in a Haystack</div>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>
