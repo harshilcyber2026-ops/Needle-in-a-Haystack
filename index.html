@@ -226,12 +226,6 @@
   <a href="#" class="nav-brand">
     <span class="bracket">[</span><span class="brand-flag">⚑</span>FLAG<span style="color:var(--accent)">VAULT</span><span class="bracket">]</span>
   </a>
-  <ul class="nav-links">
-    <li><a href="#">Home</a></li>
-    <li><a href="#" class="active">Challenges</a></li>
-    <li><a href="#">Scoreboard</a></li>
-    <li><a href="#">Rules</a></li>
-  </ul>
   <div class="nav-status"><span class="status-dot"></span>CTF LIVE</div>
 </nav>
 
@@ -256,16 +250,6 @@
 
     <!-- LEFT -->
     <div>
-
-      <!-- Stats -->
-      <div class="sec-divider"><h3>File Overview</h3></div>
-      <div class="file-stats">
-        <div class="fstat"><span class="fstat-val">10,000</span><div class="fstat-label">Total Lines</div></div>
-        <div class="fstat"><span class="fstat-val amber">1</span><div class="fstat-label">Flag Line</div></div>
-        <div class="fstat"><span class="fstat-val">~400 KB</span><div class="fstat-label">File Size</div></div>
-        <div class="fstat"><span class="fstat-val red">9,999</span><div class="fstat-label">Noise Lines</div></div>
-      </div>
-
       <!-- Download -->
       <a class="dl-btn" href="files/data.txt" download="data.txt">
         <span class="dl-icon">📄</span>
@@ -383,66 +367,6 @@
           <div><span class="t-out">FLAGLINE :: </span><span class="t-flag">FlagVault{gr3p_1s_y0ur_fr13nd}</span></div>
         </div>
       </div>
-
-      <!-- Hints -->
-      <div class="sec-divider"><h3>Hints</h3></div>
-
-      <div class="hint-item" id="h1">
-        <button class="hint-toggle" onclick="toggleHint('h1')">
-          <span class="hint-num">HINT 01</span>
-          What command do I use to search inside a text file?
-          <span class="hint-cost">Free</span>
-        </button>
-        <div class="hint-body">
-          Use <code>grep</code> — Global Regular Expression Print. It reads every line and prints lines that match your pattern.<br><br>
-          Syntax: <code>grep "PATTERN" filename</code>
-        </div>
-      </div>
-
-      <div class="hint-item" id="h2">
-        <button class="hint-toggle" onclick="toggleHint('h2')">
-          <span class="hint-num">HINT 02</span>
-          Give me the exact command
-          <span class="hint-cost">− 25 pts</span>
-        </button>
-        <div class="hint-body">
-          <code>grep "FLAGLINE" data.txt</code><br><br>
-          This searches all 10,000 lines for the word FLAGLINE and immediately returns the single line containing it — plus the flag.
-        </div>
-      </div>
-
-      <div class="hint-item" id="h3">
-        <button class="hint-toggle" onclick="toggleHint('h3')">
-          <span class="hint-num">HINT 03</span>
-          I'm on Windows — no grep available
-          <span class="hint-cost">Free</span>
-        </button>
-        <div class="hint-body">
-          Options for Windows users:<br><br>
-          1. <strong>Git Bash</strong> — ships with grep, free from git-scm.com<br>
-          2. <strong>WSL</strong> — Windows Subsystem for Linux<br>
-          3. <strong>PowerShell:</strong> <code>Select-String -Pattern "FLAGLINE" data.txt</code><br>
-          4. <strong>Python:</strong> <code>python3 -c "print([l for l in open('data.txt') if 'FLAGLINE' in l][0].strip())"</code>
-        </div>
-      </div>
-
-      <!-- Submit -->
-      <div class="submit-section">
-        <div class="submit-title">Submit Your Flag</div>
-        <p class="submit-sub">Run grep on data.txt, find the FLAGLINE, and paste the full FlagVault{...} value below.</p>
-        <div class="flag-row">
-          <div class="flag-wrap">
-            <span class="flag-prefix">FlagVault{</span>
-            <input type="text" class="form-control flag-input" id="flagInput"
-              placeholder="gr3p_..." autocomplete="off" spellcheck="false"
-              onkeydown="if(event.key==='Enter')checkFlag()" />
-          </div>
-          <button class="btn btn-primary" onclick="checkFlag()">⚑ Submit</button>
-          <button class="btn btn-danger" onclick="clearInput()">✕ Clear</button>
-        </div>
-        <div class="submit-result" id="flagResult"></div>
-      </div>
-
     </div><!-- /left -->
 
     <!-- SIDEBAR -->
